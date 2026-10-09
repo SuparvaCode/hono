@@ -104,7 +104,10 @@ export const bodyLimit = (options: BodyLimitOptions): MiddlewareHandler => {
       }),
       duplex: 'half',
     }
-    c.req.raw = new Request(c.req.raw, requestInit as RequestInit)
+    c.req.raw = new ((c.req.raw.constructor as typeof Request) || Request)(
+      c.req.raw,
+      requestInit as RequestInit
+    )
 
     return next()
   }

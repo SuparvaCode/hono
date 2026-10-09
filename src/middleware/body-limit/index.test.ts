@@ -269,5 +269,29 @@ describe('Body Limit Middleware', () => {
       expect(res.status).toBe(413)
       expect(handler).not.toHaveBeenCalled()
     })
+
+    it('should preserve custom Request constructor', async () => {
+      class CustomRequest extends Request {}
+      const customApp = new Hono()
+      customApp.use('*', bodyLimit({ maxSize: 100 }))
+      customApp.post('/', (c) => {
+        expect(c.req.raw).toBeInstanceOf(CustomRequest)
+        return c.text('ok')
+      })
+
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('hello'))
+          controller.close()
+        },
+      })
+      const req = new CustomRequest(
+        'http://localhost/',
+        buildRequestInit({ body: stream as any })
+      )
+      const res = await customApp.fetch(req)
+      expect(res.status).toBe(200)
+      expect(await res.text()).toBe('ok')
+    })
   })
 })
